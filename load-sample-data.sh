@@ -1,6 +1,9 @@
 #!/bin/sh
 
-echo "Creating index with mapping..."
+echo "🔄 Deleting old index if exists..."
+curl -s -X DELETE "http://elasticsearch:9200/products" > /dev/null
+
+echo "📦 Creating products index with proper mapping..."
 curl -s -X PUT "http://elasticsearch:9200/products" \
   -H 'Content-Type: application/json' \
   -d '{
@@ -8,14 +11,34 @@ curl -s -X PUT "http://elasticsearch:9200/products" \
       "properties": {
         "product_id": { "type": "keyword" },
         "variant_id": { "type": "keyword" },
-        "name": { "type": "text" },
+        "name": {
+          "type": "text",
+          "fields": {
+            "keyword": { "type": "keyword" }
+          }
+        },
         "description": { "type": "text" },
-        "category": { "type": "keyword" },
+        "category": {
+          "type": "text",
+          "fields": {
+            "keyword": { "type": "keyword" }
+          }
+        },
         "supplier": { "type": "keyword" },
         "attributes": {
           "properties": {
-            "color": { "type": "keyword" },
-            "size": { "type": "keyword" }
+            "color": {
+              "type": "text",
+              "fields": {
+                "keyword": { "type": "keyword" }
+              }
+            },
+            "size": {
+              "type": "text",
+              "fields": {
+                "keyword": { "type": "keyword" }
+              }
+            }
           }
         },
         "price": { "type": "float" },
@@ -54,4 +77,4 @@ curl -s -X POST "http://elasticsearch:9200/products/_doc/var2" \
     "sales": 2500
   }' > /dev/null
 
-echo "✅ Sample data loaded into Elasticsearch!"
+echo "Sample data loaded into Elasticsearch!"
