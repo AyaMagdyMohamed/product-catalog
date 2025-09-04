@@ -1,10 +1,14 @@
 require('dotenv').config();
 const express = require('express');
 const { Client } = require('@elastic/elasticsearch');
+const swaggerUi = require('swagger-ui-express');
+const YAML = require('yamljs');
+const swaggerDocument = YAML.load('./swagger.yaml');
 
 const app = express();
 app.use(express.json());
 
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 // ✅ Define Elasticsearch client here
 const es = new Client({
   node: process.env.ELASTICSEARCH_URL || 'http://localhost:9200'

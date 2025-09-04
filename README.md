@@ -34,6 +34,10 @@ cd product-catalog
 docker-compose up --build
 ```
 
+Note : it takes some time to establish all services and run scribt to put sample data make sure it finished before you start using the API.
+
+to use swagger documentation go to http://localhost:3000/docs
+
 This starts:
 - **Elasticsearch** on `http://localhost:9200`  
 - **Kibana** on `http://localhost:5601`  

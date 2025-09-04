@@ -1,0 +1,93 @@
+openapi: 3.0.3
+info:
+  title: Product Catalog API
+  version: 1.0.0
+  description: |
+    A Node.js + Elasticsearch based product catalog microservice.
+    Provides full-text search, filtering by category and attributes, and sorting by popularity.
+
+servers:
+  - url: http://localhost:3000
+
+paths:
+  /search:
+    get:
+      summary: Search products
+      description: |
+        Perform a full-text search across product catalog.
+        Supports filtering by category and attributes (e.g. color, size).
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Free-text search across name, description, supplier, and category.
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by product category (e.g. "T-Shirts").
+        - name: color
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by product color.
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by product size.
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        score:
+                          type: number
+                        product_id:
+                          type: string
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        category:
+                          type: string
+                        supplier:
+                          type: string
+                        attributes:
+                          type: object
+                          additionalProperties: true
+                        price:
+                          type: number
+                        sales:
+                          type: integer
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                      results:
+                        type: array
+                        items: {}
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  details:
+                    type: string
