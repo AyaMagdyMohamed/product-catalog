@@ -29,17 +29,15 @@ app.get('/search', async (req, res) => {
       ]
     };
 
-    // 🔍 Full-text search
     if (q) {
       body.query.bool.should.push({
         multi_match: {
           query: q,
-          fields: ["name^3", "description"],
+          fields: ["name^3", "description","supplier^2", "category","attributes.*"],
           fuzziness: "AUTO"
         }
       });
 
-      // Wildcard fallback (handles tshirt vs t-shirt)
       body.query.bool.should.push({
         wildcard: {
           "name": {
@@ -52,23 +50,29 @@ app.get('/search', async (req, res) => {
       body.query.bool.minimum_should_match = 1;
     }
 
-    // 📂 Category filter (case-insensitive)
     if (category) {
       body.query.bool.filter.push({
         match: { category: category }
       });
     }
 
-    // 🎨 Attribute filters (case-insensitive)
     Object.keys(filters).forEach(attr => {
       body.query.bool.filter.push({
         match: { [`attributes.${attr}`]: filters[attr] }
       });
     });
 
-    // ✅ Run query
     const { hits } = await es.search({ index: 'products', body });
 
+    // ✅ Handle no results
+    if (hits.hits.length === 0) {
+      return res.json({
+        message: "No data exists with this search",
+        results: []
+      });
+    }
+
+    // ✅ Return matching results
     res.json(hits.hits.map(h => ({
       id: h._id,
       score: h._score,
@@ -79,6 +83,7 @@ app.get('/search', async (req, res) => {
     res.status(500).json({ error: 'Search failed', details: err.message });
   }
 });
+
 
 
 

@@ -1,9 +1,9 @@
 #!/bin/sh
 
-echo "🔄 Deleting old index if exists..."
+echo "Deleting old index if exists..."
 curl -s -X DELETE "http://elasticsearch:9200/products" > /dev/null
 
-echo "📦 Creating products index with proper mapping..."
+echo "Creating products index with proper mapping..."
 curl -s -X PUT "http://elasticsearch:9200/products" \
   -H 'Content-Type: application/json' \
   -d '{
@@ -24,7 +24,12 @@ curl -s -X PUT "http://elasticsearch:9200/products" \
             "keyword": { "type": "keyword" }
           }
         },
-        "supplier": { "type": "keyword" },
+        "supplier": {
+          "type": "text",
+          "fields": {
+            "keyword": { "type": "keyword" }
+          }
+        },
         "attributes": {
           "properties": {
             "color": {
@@ -75,6 +80,20 @@ curl -s -X POST "http://elasticsearch:9200/products/_doc/var2" \
     "attributes": { "color": "Blue", "size": "L" },
     "price": 22.00,
     "sales": 2500
+  }' > /dev/null
+
+curl -s -X POST "http://elasticsearch:9200/products/_doc/var3" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "product_id": "prod1",
+    "variant_id": "var3",
+    "name": "Classic T-Shirt Red L",
+    "description": "100% cotton, unisex fit",
+    "category": "T-Shirts",
+    "supplier": "Nike Inc.",
+    "attributes": { "color": "Red", "size": "L" },
+    "price": 21.00,
+    "sales": 1800
   }' > /dev/null
 
 echo "Sample data loaded into Elasticsearch!"
