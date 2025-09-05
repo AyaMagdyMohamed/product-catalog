@@ -88,11 +88,6 @@ app.get('/search', async (req, res) => {
   }
 });
 
-
-
-
-
-
 app.get('/', (req, res) => {
     res.send('Service is up and running');
 });
