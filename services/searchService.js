@@ -66,7 +66,11 @@ async function searchProducts(esClient, filters) {
       body: {
         query: {
           bool: { must }
-        }
+        },
+        sort: [
+          { sales: { order: "desc" } }, // ✅ rank by best-selling
+          { _score: { order: "desc" } } // fallback to relevance
+        ]
       }
     });
   } catch (err) {
@@ -82,6 +86,9 @@ async function searchProducts(esClient, filters) {
 
   return hits.map(hit => hit._source);
 }
+
+module.exports = { searchProducts };
+
 
 
 module.exports = { searchProducts };
