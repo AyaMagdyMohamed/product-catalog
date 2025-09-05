@@ -20,14 +20,11 @@ const es = new Client({
  */
 app.get('/search', async (req, res) => {
   try {
-    const { q, category, color, size, neck_style } = req.query;
+    const { q, category, ...filters } = req.query;
 
     const body = {
       query: {
-        bool: {
-          must: [],
-          filter: [],
-        }
+        bool: { must: [], filter: [], should: [] }
       },
       size: 20,
       sort: [
@@ -36,43 +33,39 @@ app.get('/search', async (req, res) => {
       ]
     };
 
-    // 🔍 Full-text fuzzy search for q
     if (q) {
-      body.query.bool.must.push({
+      body.query.bool.should.push({
         multi_match: {
           query: q,
-          fields: ["name^3", "description", "supplier^2", "category"],
+          fields: ["name^3", "description","supplier^2", "category","attributes.*"],
           fuzziness: "AUTO"
         }
       });
+
+      body.query.bool.should.push({
+        wildcard: {
+          "name": {
+            value: `*${q.toLowerCase()}*`,
+            boost: 2.0
+          }
+        }
+      });
+
+      body.query.bool.minimum_should_match = 1;
     }
 
-    // 🎯 Strict filters
     if (category) {
       body.query.bool.filter.push({
-        term: { "category.keyword": category }
+        match: { category: category }
       });
     }
 
-    if (color) {
+    Object.keys(filters).forEach(attr => {
       body.query.bool.filter.push({
-        term: { "attributes.color.keyword": color }
+        match: { [`attributes.${attr}`]: filters[attr] }
       });
-    }
+    });
 
-    if (size) {
-      body.query.bool.filter.push({
-        term: { "attributes.size.keyword": size }
-      });
-    }
-
-    if (neck_style) {
-      body.query.bool.filter.push({
-        term: { "attributes.neck_style.keyword": neck_style }
-      });
-    }
-
-    // Execute search
     const { hits } = await es.search({ index: 'products', body });
 
     // ✅ Handle no results
@@ -94,6 +87,10 @@ app.get('/search', async (req, res) => {
     res.status(500).json({ error: 'Search failed', details: err.message });
   }
 });
+
+
+
+
 
 
 app.get('/', (req, res) => {
