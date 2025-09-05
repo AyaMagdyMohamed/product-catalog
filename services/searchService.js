@@ -20,6 +20,7 @@ async function searchProducts(es, query) {
     ]
   };
 
+  // Full-text search
   if (q) {
     body.query.bool.should.push({
       multi_match: {
@@ -41,19 +42,30 @@ async function searchProducts(es, query) {
     body.query.bool.minimum_should_match = 1;
   }
 
+  // Category filter
   if (category) {
     body.query.bool.filter.push({
-      match: { category: category }
+      match: { category }
     });
   }
 
+  // Attributes filters
   Object.keys(filters).forEach(attr => {
-    body.query.bool.filter.push({
-      match: { [`attributes.${attr}`]: filters[attr] }
-    });
+    if (attr === "neck_style") {
+      // ✅ exact match for neck_style
+      body.query.bool.filter.push({
+        term: { "attributes.neck_style": filters[attr].toLowerCase() }
+      });
+    } else {
+      // ✅ fuzzy matching for other attributes
+      body.query.bool.filter.push({
+        match: { [`attributes.${attr}`]: filters[attr] }
+      });
+    }
   });
 
-  const { hits } = await es.search({ index: 'products', body });
+  // Run query
+  const { hits } = await es.search({ index: "products", body });
 
   if (hits.hits.length === 0) {
     return {

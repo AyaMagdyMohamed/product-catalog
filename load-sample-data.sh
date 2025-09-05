@@ -7,6 +7,17 @@ echo "Creating products index with proper mapping..."
 curl -s -X PUT "http://elasticsearch:9200/products" \
   -H 'Content-Type: application/json' \
   -d '{
+    "settings": {
+      "analysis": {
+        "normalizer": {
+          "lowercase_normalizer": {
+            "type": "custom",
+            "char_filter": [],
+            "filter": ["lowercase"]
+          }
+        }
+      }
+    },
     "mappings": {
       "properties": {
         "product_id": { "type": "keyword" },
@@ -35,8 +46,8 @@ curl -s -X PUT "http://elasticsearch:9200/products" \
               "fields": { "keyword": { "type": "keyword" } }
             },
             "neck_style": {
-              "type": "text",
-              "fields": { "keyword": { "type": "keyword" } }
+              "type": "keyword",
+              "normalizer": "lowercase_normalizer"
             }
           }
         },
