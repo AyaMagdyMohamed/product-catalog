@@ -1,84 +1,87 @@
-// services/searchService.js
+async function searchProducts(esClient, filters) {
+  const must = [];
 
-/**
- * Executes a product search query in Elasticsearch.
- * @param {Object} es - Elasticsearch client
- * @param {Object} query - Request query params
- * @returns {Array|Object} - Search results
- */
-async function searchProducts(es, query) {
-  const { q, category, ...filters } = query;
-
-  const body = {
-    query: {
-      bool: { must: [], filter: [], should: [] }
-    },
-    size: 20,
-    sort: [
-      { "sales": { "order": "desc" } },
-      { "_score": { "order": "desc" } }
-    ]
-  };
-
-  // Full-text search
-  if (q) {
-    body.query.bool.should.push({
+  // full-text search (q)
+  if (filters.q) {
+    must.push({
       multi_match: {
-        query: q,
-        fields: ["name^3", "description", "supplier^2", "category", "attributes.*"],
+        query: filters.q,
+        fields: ["name^3", "description", "category"], // name weighted higher
         fuzziness: "AUTO"
       }
     });
+  }
 
-    body.query.bool.should.push({
-      wildcard: {
-        "name": {
-          value: `*${q.toLowerCase()}*`,
-          boost: 2.0
+  // color (case-insensitive)
+  if (filters.color) {
+    must.push({
+      match: {
+        "attributes.color": {
+          query: filters.color,
+          operator: "and"
         }
       }
     });
-
-    body.query.bool.minimum_should_match = 1;
   }
 
-  // Category filter
-  if (category) {
-    body.query.bool.filter.push({
-      match: { category }
+  // size (case-insensitive)
+  if (filters.size) {
+    must.push({
+      match: {
+        "attributes.size": {
+          query: filters.size,
+          operator: "and"
+        }
+      }
     });
   }
 
-  // Attributes filters
-  Object.keys(filters).forEach(attr => {
-    if (attr === "neck_style") {
-      // ✅ exact match for neck_style
-      body.query.bool.filter.push({
-        term: { "attributes.neck_style": filters[attr].toLowerCase() }
-      });
-    } else {
-      // ✅ fuzzy matching for other attributes
-      body.query.bool.filter.push({
-        match: { [`attributes.${attr}`]: filters[attr] }
-      });
-    }
-  });
-
-  // Run query
-  const { hits } = await es.search({ index: "products", body });
-
-  if (hits.hits.length === 0) {
-    return {
-      message: "No data exists with this search",
-      results: []
+  // neck_style with synonym normalization
+  if (filters.neck_style) {
+    const normalizeNeckStyle = (value) => {
+      const map = {
+        rounded: "round-neck",
+        "roundneck": "round-neck",
+        "round-neck": "round-neck",
+        vneck: "v-neck",
+        "v-neck": "v-neck"
+      };
+      return map[value.toLowerCase()] || value.toLowerCase();
     };
+
+    must.push({
+      match: {
+        "attributes.neck_style": {
+          query: normalizeNeckStyle(filters.neck_style),
+          operator: "and"
+        }
+      }
+    });
   }
 
-  return hits.hits.map(h => ({
-    id: h._id,
-    score: h._score,
-    ...h._source
-  }));
+  let result;
+  try {
+    result = await esClient.search({
+      index: "products",
+      body: {
+        query: {
+          bool: { must }
+        }
+      }
+    });
+  } catch (err) {
+    console.error("Elasticsearch query failed:", err);
+    return { message: "Search error", results: [] };
+  }
+
+  const hits = result?.hits?.hits || [];
+
+  if (hits.length === 0) {
+    return { message: "No data exists with this search", results: [] };
+  }
+
+  return hits.map(hit => hit._source);
 }
+
 
 module.exports = { searchProducts };

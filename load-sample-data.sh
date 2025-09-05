@@ -129,4 +129,4 @@ curl -s -X POST "http://elasticsearch:9200/products/_doc/var5" \
     "sales": 1400
   }' > /dev/null
 
-echo "Sample data loaded into Elasticsearch!"
+echo "✅ Sample data loaded into Elasticsearch!"
