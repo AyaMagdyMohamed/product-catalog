@@ -28,7 +28,7 @@ This is a **Node.js + Elasticsearch** based microservice that provides a searcha
 ### 1. Clone the repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/AyaMagdyMohamed/product-catalog
 cd product-catalog
 ```
 
